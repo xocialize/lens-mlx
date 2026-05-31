@@ -156,12 +156,22 @@ class LensPipeline:
     QUANT_KEEP_HI = ("img_in", "txt_in", "proj_out", "time_text_embed", "norm_out")
 
     @classmethod
-    def from_pretrained(cls, repo_dir, dit_dtype=mx.float32, quantize_bits=None, quant_group_size=64):
+    def from_pretrained(cls, repo_dir, dit_repo=None, dit_dtype=mx.float32,
+                        quantize_bits=None, quant_group_size=64):
+        """Assemble the pipeline.
+
+        `repo_dir`: a base Lens checkpoint dir providing the tokenizer, GPT-OSS encoder,
+        and FLUX.2 VAE (e.g. a local `microsoft/Lens` snapshot).
+        `dit_repo`: optional CONVERTED mlx DiT repo (e.g. `mlx-community/Lens-3.8B-4bit`).
+        If given, the DiT is loaded from it (already bf16/quantized) and `dit_dtype` /
+        `quantize_bits` are ignored. Otherwise the DiT is loaded from `repo_dir/transformer`
+        (PT) and optionally quantized on the fly.
+        """
         from pathlib import Path
         from transformers import AutoTokenizer
         from .model.transformer import LensTransformer2DModel
         from .model.text_encoder import LensGptOssEncoder
-        from .utils.weights import load_dit_weights, load_vae, quantize_dit
+        from .utils.weights import load_dit_weights, load_dit_repo, load_vae, quantize_dit
 
         repo = Path(repo_dir)
         tokenizer = AutoTokenizer.from_pretrained(str(repo / "tokenizer"))
@@ -169,11 +179,16 @@ class LensPipeline:
             tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "right"
         text_encoder = LensGptOssEncoder.from_pretrained(repo / "text_encoder")
-        transformer = LensTransformer2DModel()
-        load_dit_weights(transformer, repo / "transformer", dtype=dit_dtype)
-        if quantize_bits is not None:
-            quantize_dit(transformer, group_size=quant_group_size, bits=quantize_bits,
-                         keep_hi_precision=cls.QUANT_KEEP_HI)
+
+        if dit_repo is not None:
+            transformer = load_dit_repo(dit_repo)
+        else:
+            transformer = LensTransformer2DModel()
+            load_dit_weights(transformer, repo / "transformer", dtype=dit_dtype)
+            if quantize_bits is not None:
+                quantize_dit(transformer, group_size=quant_group_size, bits=quantize_bits,
+                             keep_hi_precision=cls.QUANT_KEEP_HI)
+
         vae = load_vae(repo / "vae")
         return cls(transformer, vae, text_encoder, tokenizer)
 

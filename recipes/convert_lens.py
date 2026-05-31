@@ -78,7 +78,8 @@ def main():
     cfg = json.loads((SRC / "config.json").read_text())
     cfg["mlx_format"] = True
     if args.bits is not None:
-        cfg["quantization"] = {"group_size": args.group_size, "bits": args.bits}
+        cfg["quantization"] = {"group_size": args.group_size, "bits": args.bits,
+                               "keep_hi_precision": list(LensPipeline.QUANT_KEEP_HI)}
     (out / "config.json").write_text(json.dumps(cfg, indent=2))
 
     total = sum(v.nbytes for v in state.values())

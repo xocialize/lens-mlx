@@ -54,6 +54,43 @@ def load_dit_weights(model, weights_dir, dtype=mx.float32, strict: bool = True):
     return model
 
 
+def load_dit_repo(repo_dir):
+    """Load a CONVERTED mlx DiT repo (bf16 / int4 / int8) produced by recipes/convert_lens.py.
+
+    Reads config.json; for a quantized repo, rebuilds the quantized module structure
+    (same group_size/bits/keep_hi_precision) BEFORE load_weights. Loads tensors as-saved
+    (no dtype cast — would corrupt packed uint32 quant weights).
+    """
+    import json
+    from ..model.transformer import LensTransformer2DModel
+
+    repo = Path(repo_dir)
+    cfg = json.loads((repo / "config.json").read_text())
+    init_keys = {
+        "patch_size", "in_channels", "out_channels", "num_layers", "attention_head_dim",
+        "num_attention_heads", "inner_dim", "enc_hidden_dim", "axes_dims_rope", "gate_mlp",
+        "rms_norm", "multi_layer_encoder_feature", "selected_layer_index",
+    }
+    kwargs = {k: cfg[k] for k in init_keys if k in cfg}
+    if "axes_dims_rope" in kwargs:
+        kwargs["axes_dims_rope"] = tuple(kwargs["axes_dims_rope"])
+    if "selected_layer_index" in kwargs:
+        kwargs["selected_layer_index"] = tuple(kwargs["selected_layer_index"])
+    model = LensTransformer2DModel(**kwargs)
+
+    q = cfg.get("quantization")
+    if q:
+        quantize_dit(model, group_size=q["group_size"], bits=q["bits"],
+                     keep_hi_precision=tuple(q.get("keep_hi_precision", ())))
+
+    state = {}
+    for f in sorted(glob.glob(str(repo / "*.safetensors"))):
+        state.update(mx.load(f))
+    mx.eval(state)
+    model.load_weights(list(state.items()), strict=True)
+    return model
+
+
 # ---------------------------------------------------------------------------
 # FLUX.2 VAE (lifted from mflux: mflux.models.flux2.model.flux2_vae.Flux2VAE)
 # ---------------------------------------------------------------------------
