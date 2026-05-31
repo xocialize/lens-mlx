@@ -17,3 +17,6 @@ goldens/
 
 # generated images (keep assets/ sample committed)
 outputs/
+
+# conversion build output (large mlx safetensors)
+build/

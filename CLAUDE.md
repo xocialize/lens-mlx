@@ -145,6 +145,17 @@ Driven by the `mlx-porting` skill. Reference oracle lives in `refs/Lens/` (depth
 - Bonus: scoping int4 to skip small precision-sensitive projections (in/out/time/norm_out) gave
   cosine 0.9976 vs 0.9944 for full int4 at the same size — worth a `keep_hi_precision` predicate.
 
+### F12 — mlx-community naming + reserve-early; verify materialization before the big push
+- **status:** confirmed (Phase 5)
+- **target:** `references/repo-layout.md` (publishing) + `references/weight-conversion.md`
+- mlx-community image models are **per-quant**: `<Name>[-<size>]-<quant>` with `-bf16/-4bit/-8bit`
+  (e.g. `Qwen-Image-2512-4bit`, `Lance-3B-bf16`, `flux2-klein-4b-8bit`). Match the team's prior
+  pattern. Reserve the family (create_repo + placeholder card) before names are taken.
+- §8-safe publishing: ship only the cleanly-licensed component (here the MIT DiT); have the loader
+  pull encoder/VAE from source rather than re-hosting unverified-license weights.
+- Before uploading 8 GB: **reload the saved repo and re-run parity** (cosine 0.999999 here). This
+  catches the lazy-tensors-saved-as-zeros failure that `mx.eval`-before-save prevents.
+
 ### F7 — Confirmations of existing skill guidance (no action, evidence for the skill's claims)
 - **status:** confirmed
 - "Code is the oracle, not press" — T0 (`selected_layer_index=[5,11,17,23]`, not "4,12,18,24").

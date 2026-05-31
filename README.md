@@ -8,8 +8,11 @@ Apple Silicon.
 > Parity vs the PT reference: encoder cosine 0.998 · DiT cosine 0.999999 · VAE 57.65 dB ·
 > full e2e image PSNR 45.26 dB. 14/14 tests green. End-to-end `generate()` produces a
 > 1024×1024 image in ~33 s (DiT bf16, 20 steps, 38.8 GB peak) on Apple Silicon.
-> See the per-phase docs under `docs/`. int4 DiT works too (2.35 GB, ~3.5× smaller;
-> 1024² in 31.8 s / 32.9 GB). Next: publish to mlx-community + Swift mirror.
+> Published: [**mlx-community/Lens-3.8B-bf16**](https://huggingface.co/mlx-community/Lens-3.8B-bf16)
+> (names also reserved: [-4bit](https://huggingface.co/mlx-community/Lens-3.8B-4bit),
+> [-8bit](https://huggingface.co/mlx-community/Lens-3.8B-8bit)). int4 DiT runs at 2.35 GB
+> (~3.5× smaller; 1024² in 31.8 s). See per-phase docs under `docs/`. Next: push int4/int8
+> weights + Swift mirror.
 
 bf16 · int4 (same prompt/seed — int4 perturbs the trajectory into a different, equally sharp image):
 
