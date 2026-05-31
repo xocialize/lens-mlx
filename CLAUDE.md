@@ -45,6 +45,13 @@ Driven by the `mlx-porting` skill. Reference oracle lives in `refs/Lens/` (depth
 > `~/.claude/skills/mlx-porting`. Mark **status**: `proposed` (verify before upstreaming),
 > `confirmed` (validated this port), `done` (already merged into the skill). Note the
 > target file (SKILL.md or references/*.md).
+>
+> **✅ MERGED 2026-05-31 — all of F1–F12 below are now in the `mlx-porting` skill:**
+> - F9, F4 → `common-pitfalls.md` traps #10, #11 + SKILL.md reading checklist
+> - F8, F11, F5, F6, F1, F2, F3 → `parity-testing.md` (relative thresholds, quantized-model
+>   gating, hook capture, custom-class load, uv-pip + accelerate, MXFP4 reference) + SKILL.md Step 7
+> - F10, F12 → `weight-conversion.md` (lift-don't-port, reload-verify, publishing/naming)
+> Kept here as the source record for sweeping other recent ports for the same patterns.
 
 ### F1 — `uv` venvs have no `pip`; parity install instructions assume `pip`
 - **status:** confirmed
