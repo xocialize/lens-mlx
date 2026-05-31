@@ -4,10 +4,10 @@ Apple MLX port of [`microsoft/Lens`](https://github.com/microsoft/Lens) — a 3.
 GPT-OSS-conditioned text-to-image DiT with a FLUX.2 VAE decoder, for inference on
 Apple Silicon.
 
-> **Status:** Phase 0 (capture & scaffold) ✅ · Phase 1 (text encoder) ✅ — encoder
-> parity green (bf16 worst-layer cosine 0.9983; a missing-YaRN-rope bug found & fixed).
-> DiT and pipeline are next (Phases 2–3). See `docs/phase0-findings.md` (config
-> reconciliation + traps T0–T8), `docs/phase1-findings.md` (encoder + the YaRN bug),
+> **Status:** Phase 0 (capture & scaffold) ✅ · Phase 1 (text encoder) ✅ ·
+> Phase 2 (DiT) ✅ — full-DiT parity cosine 0.999999 vs the PT golden.
+> Pipeline assembly (VAE + scheduler + e2e) is next (Phase 3). See the per-phase docs
+> under `docs/` (config reconciliation + traps T0–T8, the YaRN encoder bug, the DiT port)
 > and `Lens-MLX-Port-Handoff.md` (full plan).
 
 ## Pipeline
