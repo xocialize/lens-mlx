@@ -2,6 +2,11 @@
 
 **Status: naming reserved + bf16 published.**
 
+## Collection
+
+[**Lens 3.8B (MLX)**](https://huggingface.co/collections/mlx-community/lens-38b-mlx-6a1c6846ca63123d871450f1)
+under mlx-community groups all three repos.
+
 ## Reserved repos (mlx-community)
 
 Naming matches the house pattern (`Lance-3B-bf16`): **`<Name>-<size>-<quant>`**, using
