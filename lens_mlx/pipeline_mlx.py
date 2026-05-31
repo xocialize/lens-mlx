@@ -151,13 +151,17 @@ class LensPipeline:
         self.text_encoder = text_encoder
         self.tokenizer = tokenizer
 
+    # Default int4 quant scope: keep the small, precision-sensitive in/out/time
+    # projections at bf16 (better parity, negligible size cost — see Phase 4).
+    QUANT_KEEP_HI = ("img_in", "txt_in", "proj_out", "time_text_embed", "norm_out")
+
     @classmethod
-    def from_pretrained(cls, repo_dir, dit_dtype=mx.float32):
+    def from_pretrained(cls, repo_dir, dit_dtype=mx.float32, quantize_bits=None, quant_group_size=64):
         from pathlib import Path
         from transformers import AutoTokenizer
         from .model.transformer import LensTransformer2DModel
         from .model.text_encoder import LensGptOssEncoder
-        from .utils.weights import load_dit_weights, load_vae
+        from .utils.weights import load_dit_weights, load_vae, quantize_dit
 
         repo = Path(repo_dir)
         tokenizer = AutoTokenizer.from_pretrained(str(repo / "tokenizer"))
@@ -167,6 +171,9 @@ class LensPipeline:
         text_encoder = LensGptOssEncoder.from_pretrained(repo / "text_encoder")
         transformer = LensTransformer2DModel()
         load_dit_weights(transformer, repo / "transformer", dtype=dit_dtype)
+        if quantize_bits is not None:
+            quantize_dit(transformer, group_size=quant_group_size, bits=quantize_bits,
+                         keep_hi_precision=cls.QUANT_KEEP_HI)
         vae = load_vae(repo / "vae")
         return cls(transformer, vae, text_encoder, tokenizer)
 

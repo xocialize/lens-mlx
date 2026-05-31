@@ -133,6 +133,18 @@ Driven by the `mlx-porting` skill. Reference oracle lives in `refs/Lens/` (depth
   porting any standard component (VAE, text encoder, scheduler), grep the installed mlx packages
   (mflux, mlx-lm, mlx-arsenal) for an existing implementation to reuse.
 
+### F11 — Don't gate a quantized generative model on PSNR-vs-the-fp32-golden image
+- **status:** confirmed (Phase 4)
+- **target:** `references/parity-testing.md` (quantization section) + Step 7
+- int4 perturbs each denoise step (per-pass cosine 0.9976); diffusion sampling amplifies that
+  across steps into a *different but equally valid* image. e2e PSNR vs the fp32-golden was 15.6 dB
+  — pure trajectory divergence, NOT a quality defect (the int4 sample is sharp/photorealistic).
+  Gate quantized models on: (1) per-pass weight-level cosine ≥ ~0.99 (deterministic, same
+  inputs), (2) image-validity sanity (finite, std>0.1, no explosion), (3) a committed visual
+  sample. Reserve e2e-PSNR-vs-golden for *unquantized* parity where the trajectory should match.
+- Bonus: scoping int4 to skip small precision-sensitive projections (in/out/time/norm_out) gave
+  cosine 0.9976 vs 0.9944 for full int4 at the same size — worth a `keep_hi_precision` predicate.
+
 ### F7 — Confirmations of existing skill guidance (no action, evidence for the skill's claims)
 - **status:** confirmed
 - "Code is the oracle, not press" — T0 (`selected_layer_index=[5,11,17,23]`, not "4,12,18,24").

@@ -13,6 +13,21 @@ from pathlib import Path
 from typing import Dict
 
 import mlx.core as mx
+import mlx.nn as nn
+
+
+def quantize_dit(model, group_size: int = 64, bits: int = 4, keep_hi_precision=()):
+    """Quantize DiT Linears in place (group_size/bits). `keep_hi_precision` is a tuple
+    of substrings; any Linear whose path contains one is left at bf16/fp32 (e.g. the
+    in/out projections and time embed, which are small and precision-sensitive).
+    """
+    def predicate(path: str, module) -> bool:
+        if not isinstance(module, nn.Linear):
+            return False
+        return not any(s in path for s in keep_hi_precision)
+
+    nn.quantize(model, group_size=group_size, bits=bits, class_predicate=predicate)
+    return model
 
 
 def sanitize_dit_key(k: str) -> str:

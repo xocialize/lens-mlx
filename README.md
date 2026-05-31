@@ -8,9 +8,15 @@ Apple Silicon.
 > Parity vs the PT reference: encoder cosine 0.998 · DiT cosine 0.999999 · VAE 57.65 dB ·
 > full e2e image PSNR 45.26 dB. 14/14 tests green. End-to-end `generate()` produces a
 > 1024×1024 image in ~33 s (DiT bf16, 20 steps, 38.8 GB peak) on Apple Silicon.
-> See the per-phase docs under `docs/`. Next: quantization + publish + Swift mirror.
+> See the per-phase docs under `docs/`. int4 DiT works too (2.35 GB, ~3.5× smaller;
+> 1024² in 31.8 s / 32.9 GB). Next: publish to mlx-community + Swift mirror.
 
-![sample](assets/sample_lake.png)
+bf16 · int4 (same prompt/seed — int4 perturbs the trajectory into a different, equally sharp image):
+
+<p float="left">
+  <img src="assets/sample_lake.png" width="45%" />
+  <img src="assets/sample_int4.png" width="45%" />
+</p>
 
 ```python
 import mlx.core as mx
