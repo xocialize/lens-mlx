@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lens-mlx"
+version = "0.1.0.dev0"
+description = "Apple MLX port of microsoft/Lens (GPT-OSS-conditioned text-to-image DiT + FLUX.2 VAE)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "MVS Collective" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mlx>=0.31.0",
+    "mlx-lm>=0.20",
+    "safetensors>=0.4",
+    "huggingface_hub>=0.34",
+    "numpy>=1.26",
+    "Pillow>=10",
+]
+
+[project.optional-dependencies]
+# mflux supplies the FLUX.2 VAE + flow-match scaffolding used to validate DiT parity.
+mflux = [
+    "mflux>=0.6",
+]
+# PyTorch is a DEV-ONLY dep for parity tests. End users running on MLX never need it.
+parity = [
+    "torch>=2.2",
+    "transformers>=4.55",
+    "diffusers>=0.37",
+    "einops>=0.8",
+    # accelerate enables low_cpu_mem_usage for the large (20B) PT reference loads.
+    "accelerate>=0.30",
+]
+dev = [
+    "lens-mlx[parity,mflux]",
+    "pytest>=8",
+    "ruff>=0.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/xocialize-code/lens-mlx"
+Reference = "https://github.com/microsoft/Lens"
+
+[tool.setuptools]
+packages = ["lens_mlx", "lens_mlx.model", "lens_mlx.utils"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
