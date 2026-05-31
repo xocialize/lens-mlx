@@ -17,6 +17,10 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+import mlx.core as mx
+
+from .scheduler import FlowMatchEulerDiscreteScheduler
+
 # Chat template constants used by the Lens text encoder (verbatim from upstream).
 _CHAT_SYSTEM = (
     "Describe the image by detailing the color, shape, size, texture, "
@@ -74,8 +78,57 @@ def build_chat_inputs(tokenizer, prompts: Sequence[str], max_sequence_length: in
     return encoded["input_ids"], encoded["attention_mask"]
 
 
+def lens_cfg(noise: mx.array, guidance_scale: float) -> mx.array:
+    """Norm-rescaled classifier-free guidance (T-extra, NOT vanilla CFG).
+
+    Upstream: comb = uncond + g*(cond-uncond); rescale per-token by ||cond||/||comb||.
+    """
+    cond, uncond = mx.split(noise, 2, axis=0)
+    comb = uncond + guidance_scale * (cond - uncond)
+    cond_norm = mx.linalg.norm(cond, axis=-1, keepdims=True)
+    comb_norm = mx.linalg.norm(comb, axis=-1, keepdims=True)
+    scale = mx.where(comb_norm > 0, cond_norm / mx.maximum(comb_norm, 1e-12), mx.ones_like(comb_norm))
+    return comb * scale
+
+
+def denoise(
+    transformer,
+    latents: mx.array,
+    encoder_features: List[mx.array],
+    encoder_mask: mx.array,
+    img_shapes,
+    num_inference_steps: int,
+    guidance_scale: float = 4.0,
+    scheduler: FlowMatchEulerDiscreteScheduler = None,
+) -> mx.array:
+    """Lens flow-match denoising loop with CFG batching + norm-rescaled guidance.
+
+    `latents` is the single (uncond/cond-shared) image latent [B, S, C]; it is
+    repeated for the joint CFG batch each step. `encoder_features`/`encoder_mask`
+    are already CFG-batched ([cond; uncond]).
+    """
+    seq_len = latents.shape[1]
+    mu = compute_empirical_mu(seq_len, num_inference_steps)
+    N = num_inference_steps
+    sigmas = [1.0 - i * (1.0 - 1.0 / N) / (N - 1) for i in range(N)] if N > 1 else [1.0]
+    scheduler = scheduler or FlowMatchEulerDiscreteScheduler()
+    scheduler.set_timesteps(sigmas, mu=mu)
+
+    for t in scheduler.timesteps:
+        hidden_states = mx.concatenate([latents, latents], axis=0)
+        timestep = mx.full((hidden_states.shape[0],), t / 1000.0)
+        noise = transformer(
+            hidden_states=hidden_states, encoder_hidden_states=encoder_features,
+            encoder_hidden_states_mask=encoder_mask, timestep=timestep, img_shapes=img_shapes,
+        )
+        noise_pred = lens_cfg(noise, guidance_scale)
+        latents = scheduler.step(noise_pred, latents)
+        mx.eval(latents)
+    return latents
+
+
 class LensPipeline:
-    """Lens text-to-image pipeline (assembled in Phase 3)."""
+    """Lens text-to-image pipeline (full from_pretrained assembly: Phase 3c WIP)."""
 
     def __init__(self, *args, **kwargs):
-        raise NotImplementedError("Phase 3: assemble LensPipeline (VAE + scheduler + e2e)")
+        raise NotImplementedError("Phase 3c: full from_pretrained assembly pending")

@@ -37,3 +37,33 @@ def load_dit_weights(model, weights_dir, dtype=mx.float32, strict: bool = True):
     mx.eval(state)
     model.load_weights(list(state.items()), strict=strict)
     return model
+
+
+# ---------------------------------------------------------------------------
+# FLUX.2 VAE (lifted from mflux: mflux.models.flux2.model.flux2_vae.Flux2VAE)
+# ---------------------------------------------------------------------------
+
+def load_vae(weights_dir, dtype=mx.float32):
+    """Instantiate mflux's Flux2VAE and load the Lens diffusers VAE safetensors.
+
+    Mapping (derived empirically): keys are diffusers-identical except
+      - `to_out.0.` -> `to_out.` (mid-block attention out-projection ModuleList),
+      - drop `bn.num_batches_tracked` (mflux's Flux2BatchNormStats has no counter),
+      - 4D Conv weights transpose PT [O,I,kH,kW] -> MLX [O,kH,kW,I].
+    The `bn` running stats (the T1 latent de-norm) ride along in the same file.
+    """
+    from mflux.models.flux2.model.flux2_vae.vae import Flux2VAE
+
+    vae = Flux2VAE()
+    state = {}
+    for f in sorted(glob.glob(str(Path(weights_dir) / "*.safetensors"))):
+        for k, v in mx.load(f).items():
+            if k.endswith("num_batches_tracked"):
+                continue
+            k = k.replace(".to_out.0.", ".to_out.")
+            if v.ndim == 4:  # conv weight: PT (O,I,kH,kW) -> MLX (O,kH,kW,I)
+                v = v.transpose(0, 2, 3, 1)
+            state[k] = v.astype(dtype)
+    mx.eval(state)
+    vae.load_weights(list(state.items()), strict=True)
+    return vae

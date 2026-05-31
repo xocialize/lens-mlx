@@ -123,6 +123,16 @@ Driven by the `mlx-porting` skill. Reference oracle lives in `refs/Lens/` (depth
   negligible — the 0.94 was ALL rope). Also revises F8: matched-precision parity is what exposed
   this; an absolute/relative-threshold debate was secondary.
 
+### F10 — Check the mlx ecosystem for a component to LIFT before porting it
+- **status:** confirmed
+- **target:** `references/repo-layout.md` / `references/weight-conversion.md` (reuse inventory)
+- mflux's `Flux2VAE` matched the Lens diffusers VAE at **246/250 keys** (only `to_out.0.`→`to_out.`
+  + the standard 4D conv transpose), and its `decode_packed_latents` already encoded the
+  model-specific bn latent de-norm (T1) + unpatchify (T4) identically. Lifting it (instantiate +
+  load the checkpoint's own VAE weights with a tiny key map) beat re-porting a conv VAE. Before
+  porting any standard component (VAE, text encoder, scheduler), grep the installed mlx packages
+  (mflux, mlx-lm, mlx-arsenal) for an existing implementation to reuse.
+
 ### F7 — Confirmations of existing skill guidance (no action, evidence for the skill's claims)
 - **status:** confirmed
 - "Code is the oracle, not press" — T0 (`selected_layer_index=[5,11,17,23]`, not "4,12,18,24").
