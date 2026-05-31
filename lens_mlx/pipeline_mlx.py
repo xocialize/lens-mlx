@@ -127,8 +127,99 @@ def denoise(
     return latents
 
 
-class LensPipeline:
-    """Lens text-to-image pipeline (full from_pretrained assembly: Phase 3c WIP)."""
+def _pack_latents_for_decode(latents: mx.array, latent_h: int, latent_w: int) -> mx.array:
+    """[b, h*w, c*4] -> packed [b, c*4, h, w] (Lens _decode: rearrange then patchify)."""
+    b = latents.shape[0]
+    c = latents.shape[2] // 4
+    x = latents.reshape(b, latent_h, latent_w, c, 2, 2).transpose(0, 3, 1, 4, 2, 5)
+    x = x.reshape(b, c, latent_h * 2, latent_w * 2)
+    H, W = latent_h * 2, latent_w * 2
+    x = x.reshape(b, c, H // 2, 2, W // 2, 2).transpose(0, 1, 3, 5, 2, 4)
+    return x.reshape(b, c * 4, H // 2, W // 2)
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError("Phase 3c: full from_pretrained assembly pending")
+
+class LensPipeline:
+    """Lens text-to-image pipeline — MLX. Mirrors refs/Lens/lens/pipeline.py."""
+
+    vae_scale_factor = 16
+    latent_channels = 128
+    txt_offset = DEFAULT_TXT_OFFSET
+
+    def __init__(self, transformer, vae, text_encoder, tokenizer):
+        self.transformer = transformer
+        self.vae = vae
+        self.text_encoder = text_encoder
+        self.tokenizer = tokenizer
+
+    @classmethod
+    def from_pretrained(cls, repo_dir, dit_dtype=mx.float32):
+        from pathlib import Path
+        from transformers import AutoTokenizer
+        from .model.transformer import LensTransformer2DModel
+        from .model.text_encoder import LensGptOssEncoder
+        from .utils.weights import load_dit_weights, load_vae
+
+        repo = Path(repo_dir)
+        tokenizer = AutoTokenizer.from_pretrained(str(repo / "tokenizer"))
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.padding_side = "right"
+        text_encoder = LensGptOssEncoder.from_pretrained(repo / "text_encoder")
+        transformer = LensTransformer2DModel()
+        load_dit_weights(transformer, repo / "transformer", dtype=dit_dtype)
+        vae = load_vae(repo / "vae")
+        return cls(transformer, vae, text_encoder, tokenizer)
+
+    def _encode(self, prompt: str, max_sequence_length: int = 512):
+        """Chat-template encode + offset slice -> (features list, mask), batch 1."""
+        input_ids, attn = build_chat_inputs(self.tokenizer, [prompt], max_sequence_length)
+        layers = self.text_encoder(mx.array(input_ids))  # 4 x [1, S, 2880]
+        off = self.txt_offset
+        if input_ids.shape[1] > off:
+            feats = [f[:, off:, :] for f in layers]
+            mask = mx.array(attn[:, off:].astype("int32"))
+        else:
+            feats = [f[:, :0, :] for f in layers]
+            mask = mx.zeros((1, 0), dtype=mx.int32)
+        return feats, mask
+
+    def __call__(
+        self,
+        prompt: str,
+        height: int = 1024,
+        width: int = 1024,
+        num_inference_steps: int = 20,
+        guidance_scale: float = 4.0,
+        seed: int = 0,
+    ):
+        from PIL import Image
+        import numpy as np
+
+        if height % self.vae_scale_factor or width % self.vae_scale_factor:
+            raise ValueError(f"height/width must be divisible by {self.vae_scale_factor}")
+        latent_h, latent_w = height // self.vae_scale_factor, width // self.vae_scale_factor
+
+        # 1. Encode prompt (positive) + empty negative (zeros), CFG-batch [cond; uncond].
+        pos, pos_mask = self._encode(prompt)
+        enc = [mx.concatenate([p, mx.zeros_like(p)], axis=0) for p in pos]
+        mask = mx.concatenate([pos_mask, mx.zeros_like(pos_mask)], axis=0)
+
+        # 2. Initial latents (MLX RNG — not torch-seed-compatible).
+        mx.random.seed(seed)
+        latents = mx.random.normal((1, latent_h * latent_w, self.latent_channels))
+
+        # 3. Denoise.
+        latents = denoise(
+            self.transformer, latents, enc, mask, [(1, latent_h, latent_w)],
+            num_inference_steps, guidance_scale,
+        )
+
+        # 4. Decode (T1 bn de-norm + T4 unpatchify + VAE).
+        img = self.vae.decode_packed_latents(_pack_latents_for_decode(latents, latent_h, latent_w))
+        mx.eval(img)
+        img = np.array(img.astype(mx.float32))
+        if img.shape[1] != 3 and img.shape[-1] == 3:
+            img = np.transpose(img, (0, 3, 1, 2))
+        img = np.clip(img, -1.0, 1.0)
+        img = ((img + 1.0) * 127.5).astype("uint8")[0].transpose(1, 2, 0)
+        return Image.fromarray(img)

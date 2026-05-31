@@ -1,8 +1,9 @@
 # Phase 3 — VAE + scheduler + e2e
 
-**Status: numerics GREEN.** The full pipeline (encoder → DiT → scheduler/CFG → VAE)
-reproduces the PT reference image. `from_pretrained` orchestration is the remaining
-plumbing (Phase 3e).
+**Status: GREEN — port functionally complete.** The full pipeline (encoder → DiT →
+scheduler/CFG → VAE) reproduces the PT reference image, and `LensPipeline.from_pretrained`
+generates real images from raw text: **1024×1024, 20 steps, ~33 s, 38.8 GB peak** (DiT
+bf16) on Apple Silicon. See `assets/sample_lake.png`.
 
 ## Results
 

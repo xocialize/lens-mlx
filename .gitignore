@@ -14,3 +14,6 @@ refs/Lens/
 weights/
 goldens/
 *.safetensors
+
+# generated images (keep assets/ sample committed)
+outputs/

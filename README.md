@@ -4,11 +4,23 @@ Apple MLX port of [`microsoft/Lens`](https://github.com/microsoft/Lens) — a 3.
 GPT-OSS-conditioned text-to-image DiT with a FLUX.2 VAE decoder, for inference on
 Apple Silicon.
 
-> **Status:** Phase 0 (scaffold) ✅ · Phase 1 (text encoder) ✅ · Phase 2 (DiT) ✅ ·
-> Phase 3 (VAE + scheduler + e2e) ✅ — **full pipeline reproduces the reference image at
-> PSNR 45.26 dB** (encoder cosine 0.998, DiT cosine 0.999999, VAE 57.65 dB). 14/14 tests
-> green. Remaining: the high-level `from_pretrained` / `generate` entrypoint (Phase 3e).
-> See the per-phase docs under `docs/` and `Lens-MLX-Port-Handoff.md`.
+> **Status:** Phases 0–3 ✅ — **the port is functionally complete and generates images.**
+> Parity vs the PT reference: encoder cosine 0.998 · DiT cosine 0.999999 · VAE 57.65 dB ·
+> full e2e image PSNR 45.26 dB. 14/14 tests green. End-to-end `generate()` produces a
+> 1024×1024 image in ~33 s (DiT bf16, 20 steps, 38.8 GB peak) on Apple Silicon.
+> See the per-phase docs under `docs/`. Next: quantization + publish + Swift mirror.
+
+![sample](assets/sample_lake.png)
+
+```python
+import mlx.core as mx
+from lens_mlx.pipeline_mlx import LensPipeline
+
+pipe = LensPipeline.from_pretrained("weights/Lens", dit_dtype=mx.bfloat16)
+img = pipe("A serene lake below snow-capped mountains, golden hour.",
+           height=1024, width=1024, num_inference_steps=20, seed=42)
+img.save("out.png")
+```
 
 ## Pipeline
 
