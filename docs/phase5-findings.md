@@ -14,9 +14,15 @@ microsoft's official "3.8B" branding.
 
 | repo | status |
 |---|---|
-| [`mlx-community/Lens-3.8B-bf16`](https://huggingface.co/mlx-community/Lens-3.8B-bf16) | **published** — DiT bf16 (8.2 GB) + card + sample |
-| [`mlx-community/Lens-3.8B-4bit`](https://huggingface.co/mlx-community/Lens-3.8B-4bit) | reserved (placeholder card) — int4 weights next |
-| [`mlx-community/Lens-3.8B-8bit`](https://huggingface.co/mlx-community/Lens-3.8B-8bit) | reserved (placeholder card) |
+| [`mlx-community/Lens-3.8B-bf16`](https://huggingface.co/mlx-community/Lens-3.8B-bf16) | **published** — DiT bf16 (8.2 GB) |
+| [`mlx-community/Lens-3.8B-4bit`](https://huggingface.co/mlx-community/Lens-3.8B-4bit) | **published** — int4 (2.35 GB) |
+| [`mlx-community/Lens-3.8B-8bit`](https://huggingface.co/mlx-community/Lens-3.8B-8bit) | **published** — int8 (4.39 GB) |
+
+Code: [**github.com/xocialize-code/lens-mlx**](https://github.com/xocialize-code/lens-mlx)
+(public; clean fresh-history release, internal docs excluded). Load published weights via
+`LensPipeline.from_pretrained(base, dit_repo="mlx-community/Lens-3.8B-4bit")` —
+`load_dit_repo` rebuilds the quantized structure from config before loading. Round-trip
+verified (reload+parity): bf16 0.999999 · int4 0.9976 · int8 0.99998.
 
 ## What ships in the repo (§8-safe)
 
