@@ -1,6 +1,6 @@
 """Phase 1 gate — MLX GPT-OSS encoder forward correctness vs the PT golden.
 
-Two regimes (see CLAUDE.md F3/F8):
+Two regimes:
   - bf16 (correctness gate): dense bf16 mlx encoder vs the bf16 PT golden. Same
     precision both sides -> proves the forward (masks, layer loop, capture indices,
     early-exit) is correct. Gate: per-layer cosine >= 0.999.

@@ -53,17 +53,21 @@ def main():
     ap.add_argument("--bits", type=int, default=None, help="quantize DiT (e.g. 4, 8)")
     ap.add_argument("--group-size", type=int, default=64)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--src", default=None,
+                    help="DiT transformer/ dir to convert (default: base Lens). "
+                         "Use the Lens-Turbo transformer/ for the Turbo variant.")
     args = ap.parse_args()
 
     from lens_mlx.model.transformer import LensTransformer2DModel
     from lens_mlx.utils.weights import load_dit_weights, quantize_dit
     from lens_mlx.pipeline_mlx import LensPipeline
 
+    src = Path(args.src) if args.src else SRC
     out = ROOT / args.out
     out.mkdir(parents=True, exist_ok=True)
 
     model = LensTransformer2DModel()
-    load_dit_weights(model, SRC, dtype=DTYPES[args.dtype])
+    load_dit_weights(model, src, dtype=DTYPES[args.dtype])
     quant_meta = {}
     if args.bits is not None:
         quantize_dit(model, group_size=args.group_size, bits=args.bits,
@@ -75,7 +79,7 @@ def main():
     mx.eval(state)  # MATERIALIZE before save — lazy tensors serialize as zeros (the silent killer).
     _save_sharded(out, state, {"format": "mlx", "model_type": "lens_transformer_2d", **quant_meta})
 
-    cfg = json.loads((SRC / "config.json").read_text())
+    cfg = json.loads((src / "config.json").read_text())
     cfg["mlx_format"] = True
     if args.bits is not None:
         cfg["quantization"] = {"group_size": args.group_size, "bits": args.bits,

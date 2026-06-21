@@ -48,7 +48,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/xocialize-code/lens-mlx"
+Homepage = "https://github.com/xocialize/lens-mlx"
 Reference = "https://github.com/microsoft/Lens"
 
 [tool.setuptools]

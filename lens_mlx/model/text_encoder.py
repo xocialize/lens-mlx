@@ -32,7 +32,7 @@ DEFAULT_SELECTED_LAYERS = (5, 11, 17, 23)
 # it. mlx-lm reads the json, sees no rope_scaling, and silently falls back to plain
 # rope (mscale=1.0) — which diverges from the reference at EVERY layer/position
 # (the YaRN attention_scaling is ~1.3466). We inject it when the config omits it.
-# See CLAUDE.md skill-feedback F9.
+
 GPT_OSS_YARN_ROPE = {
     "rope_type": "yarn",
     "factor": 32.0,

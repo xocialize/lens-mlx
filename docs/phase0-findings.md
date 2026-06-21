@@ -71,7 +71,7 @@ fp32 DiT/VAE, bf16-dequant encoder.
 | decoded_image | (1,3,512,512) | 1.08 | [-1,1], pre-clamp |
 
 **Parity-gate note:** encoder features reach O(1e4) → gate Phase 1 on **relative error /
-cosine**, not absolute `max_abs` (see CLAUDE.md skill-feedback F8).
+cosine**, not absolute `max_abs`.
 
 ## Env
 venv `.venv` (py3.12): mlx 0.31.2, mlx-lm, mflux, transformers 5.9.0, huggingface_hub 1.17.0.

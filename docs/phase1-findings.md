@@ -34,7 +34,7 @@ The bf16-vs-bf16 diagnostic (matched precision) held at **0.94**, proving a *for
 `load_model(..., model_config=...)`) when the on-disk config omits `rope_scaling`. Validated by
 deleting `rope_scaling` from the on-disk configs and confirming parity still holds via the loader.
 
-General lesson (CLAUDE.md F9): never trust `config.json` for rope — compare the **resolved** rope
+General lesson: never trust `config.json` for rope — compare the **resolved** rope
 on both sides (`pt.model.rotary_emb.attention_scaling` + `inv_freq` vs the mlx rope object).
 
 ## Artifacts

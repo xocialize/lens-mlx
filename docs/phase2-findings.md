@@ -35,7 +35,7 @@ negative_prompt=""); output compared to `dit_out_noise`.
 - `tests/parity/test_dit_rope_parity.py` — T2/T3 micro-parity.
 - `tests/parity/test_dit_parity.py` — full-DiT gate.
 
-## Skill note (CLAUDE.md F7 confirmation)
+## Skill note
 The isomorphic-naming hard rule paid for itself: the DiT loaded with zero key surgery and
 passed full parity on the first run. A non-Module class is the clean way to hold computed
 rope/constant buffers in MLX without them being treated as (missing) checkpoint parameters.
